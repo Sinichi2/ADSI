@@ -1,0 +1,19 @@
+# Core — needed for the app to start + deterministic paths (excel, figma, manual, validation)
+streamlit
+jsonschema
+python-dotenv
+requests
+pillow
+openpyxl
+
+# Document path (PDF/Word). camelot needs ghostscript; pdfplumber is the fallback.
+pdfplumber
+python-docx
+camelot-py[cv]
+
+# Website path
+firecrawl-py
+
+# LLM (prose interpretation, website naming, swatch naming, scale suggestion)
+langchain
+langchain-google-genai

@@ -1,0 +1,104 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Agentic Design System - Canonical Token Schema",
+  "description": "Common intermediate schema that all four ingestion paths (document, figma, website, manual) load into. Superset of the W3C Design Tokens format with added provenance and confidence metadata for HITL review.",
+  "type": "object",
+  "properties": {
+    "$meta": {
+      "type": "object",
+      "description": "Top-level extraction run metadata",
+      "properties": {
+        "source_type": { "type": "string", "enum": ["document", "figma", "website", "manual"] },
+        "source_ref": { "type": "string", "description": "File path/name for documents, file key for figma, root URL for websites" },
+        "extracted_at": { "type": "string", "format": "date-time" },
+        "extraction_agent_version": { "type": "string" },
+        "requires_hitl": { "type": "boolean" },
+        "modes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Figma collection modes (e.g. light/dark) when more than one is present"
+        }
+      },
+      "required": ["source_type", "source_ref", "extracted_at"]
+    },
+    "color": {
+      "type": "object",
+      "properties": {
+        "primitive": { "$ref": "#/definitions/tokenGroup" },
+        "semantic": { "$ref": "#/definitions/tokenGroup" }
+      }
+    },
+    "typography": {
+      "type": "object",
+      "properties": {
+        "fontFamily": { "$ref": "#/definitions/tokenGroup" },
+        "fontSize": { "$ref": "#/definitions/tokenGroup" },
+        "fontWeight": { "$ref": "#/definitions/tokenGroup" },
+        "lineHeight": { "$ref": "#/definitions/tokenGroup" },
+        "letterSpacing": { "$ref": "#/definitions/tokenGroup" }
+      }
+    },
+    "spacing": { "$ref": "#/definitions/tokenGroup" },
+    "radius": { "$ref": "#/definitions/tokenGroup" },
+    "shadow": { "$ref": "#/definitions/tokenGroup" },
+    "component": {
+      "type": "object",
+      "description": "Optional: variant + state mappings if component-level extraction is in scope",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "variants": { "type": "object" },
+          "states": { "type": "object" },
+          "tokenRefs": {
+            "type": "array",
+            "items": { "type": "string", "description": "Reference to a token path, e.g. color.semantic.action-primary" }
+          }
+        }
+      }
+    }
+  },
+  "required": ["$meta"],
+  "definitions": {
+    "tokenGroup": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/definitions/token" }
+    },
+    "token": {
+      "type": "object",
+      "description": "A single design token",
+      "properties": {
+        "value": { "description": "The resolved value, e.g. #1A2B4C, 16px, 1.5rem" },
+        "type": { "type": "string", "enum": ["color", "fontFamily", "fontSize", "fontWeight", "lineHeight", "letterSpacing", "dimension", "shadow", "duration", "number"] },
+        "description": { "type": "string" },
+        "provenance": {
+          "type": "object",
+          "description": "Where this value came from - required for website path, optional for others",
+          "properties": {
+            "raw_observations": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Raw computed values seen across the crawl before clustering, e.g. ['#1A2B4C', '#1A2B4D']"
+            },
+            "occurrence_count": { "type": "integer" },
+            "screenshot_ref": { "type": "string", "description": "Path/URL to a cropped screenshot showing the token in use" },
+            "dom_selectors": { "type": "array", "items": { "type": "string" } },
+            "source_page": { "type": "string", "description": "Document page/cell/sheet the value was read from" },
+            "alias_chain": { "type": "array", "items": { "type": "string" }, "description": "Figma alias resolution chain when a variable failed to resolve" }
+          }
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Agent confidence in this inferred token. 1.0 for explicit values. Required for website-sourced tokens."
+        },
+        "hitl_status": {
+          "type": "string",
+          "enum": ["not_required", "pending", "approved", "edited", "rejected", "merged"],
+          "default": "not_required"
+        }
+      },
+      "required": ["value", "type"]
+    }
+  }
+}
