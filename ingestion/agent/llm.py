@@ -13,7 +13,6 @@ log = logging.getLogger(__name__)
 class LLMUnavailable(RuntimeError):
     """Raised when no API key / LLM lib is present. Callers should degrade, not crash."""
 
-
 def available():
     return bool(os.getenv("GOOGLE_API_KEY"))
 

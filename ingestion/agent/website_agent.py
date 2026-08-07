@@ -7,9 +7,9 @@ step adds semantic names. Confidence is occurrence-driven and gated at `threshol
 """
 import logging
 
-from ingestion import llm
+from ingestion.agent import llm
 from ingestion.schema_assembler import DEFAULT_THRESHOLD, assemble, make_token
-from tools import firecrawl_tool, style_parser
+from tools import asset_parser, firecrawl_tool, style_parser
 
 log = logging.getLogger(__name__)
 
@@ -61,6 +61,19 @@ def _name_semantics(groups, api_key=None):
         pass
 
 
+def _extract_assets(groups, html_text, url, threshold):
+    """Favicon (explicit rel=icon link) vs logo <img> (fuzzier alt/src match) -> different confidence."""
+    found = asset_parser.extract(html_text, url)
+    for i, href in enumerate(found["icon"]):
+        groups.setdefault("icon", {})[f"icon-{i + 1}"] = make_token(
+            href, "image", confidence=0.85, threshold=threshold,
+            provenance={"source_page": "website-link-icon"})
+    for i, src in enumerate(found["logo"]):
+        groups.setdefault("logo", {})[f"logo-{i + 1}"] = make_token(
+            src, "image", confidence=0.65, threshold=threshold,
+            provenance={"source_page": "website-img-logo"})
+
+
 def run(url, config=None):
     config = config or {}
     threshold = config.get("confidence_threshold", DEFAULT_THRESHOLD)
@@ -68,4 +81,5 @@ def run(url, config=None):
     counters = style_parser.extract(css_text)
     groups = cluster(counters, threshold=threshold)
     _name_semantics(groups, api_key=config.get("google_key"))
+    _extract_assets(groups, css_text, url, threshold)
     return assemble("website", url, groups)

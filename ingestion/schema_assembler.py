@@ -1,10 +1,5 @@
-"""Shared schema assembly + validation. All four paths funnel through here."""
-import json
-import logging
-import os
+import json, logging, os, jsonschema
 from datetime import datetime, timezone
-
-import jsonschema
 
 log = logging.getLogger(__name__)
 
@@ -14,7 +9,6 @@ DEFAULT_THRESHOLD = 0.75
 
 # Top-level token category keys in the schema (everything else under a path is nesting).
 _CATEGORY_KEYS = {"color", "typography", "spacing", "radius", "shadow"}
-
 
 def load_schema():
     with open(SCHEMA_PATH, encoding="utf-8") as f:

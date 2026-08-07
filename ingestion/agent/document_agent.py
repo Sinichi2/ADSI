@@ -3,12 +3,8 @@
 Explicit values (Excel cell, PDF table row) -> confidence 1.0 / not_required.
 Prose- or swatch-inferred values go through the confidence gate (capped 0.8).
 """
-import json
-import logging
-import os
-import re
-
-from ingestion import llm
+import json, logging, os, re
+from ingestion.agent import llm
 from ingestion.schema_assembler import assemble, iter_tokens, make_token
 from tools import pdf_table_extractor, swatch_detector
 
@@ -27,15 +23,28 @@ _CATEGORY_HINTS = {
     "type": (("typography", "fontSize"), "fontSize"),
     "font": (("typography", "fontSize"), "fontSize"),
     "size": (("typography", "fontSize"), "fontSize"),
+    "logo": (("logo",), "image"),
+    "icon": (("icon",), "image"),
+    "design_principles": (("principles",), "text"),
+    "brand_guide": (("brand_guide",), "text"),
+    "brand": (("brand_guide",), "text"),
 }
-
 
 def _empty_groups():
     return {"color": {"primitive": {}}, "typography": {"fontSize": {}},
-            "spacing": {}, "radius": {}}
+            "spacing": {}, "radius": {}, "logo": {}, "icon": {},
+            "brand_guide": {}, "principles": {}}
 
 
 def _place(groups, path, name, token):
+    """ 
+
+    Args:
+        groups (_type_): _description_
+        path (_type_): _description_
+        name (_type_): _description_
+        token (_type_): _description_
+    """
     node = groups
     for key in path[:-1]:
         node = node.setdefault(key, {})
@@ -49,7 +58,7 @@ def _category_for(header):
     return None
 
 
-# --- Excel: direct cell -> schema mapping -----------------------------------
+# Excel: direct cell -> schema mapping
 def parse_excel(path):
     from openpyxl import load_workbook  # lazy
     wb = load_workbook(path, data_only=True)
@@ -78,7 +87,7 @@ def parse_excel(path):
     return groups
 
 
-# --- PDF: tables first, swatch fallback -------------------------------------
+# PDF: tables first, swatch fallback
 def parse_pdf(path, config):
     groups = _empty_groups()
     for table in pdf_table_extractor.extract_tables(path):
@@ -127,7 +136,7 @@ def _name_swatch(hexv, text, config):
         return None, 0.6
 
 
-# --- Word: prose -> tokens via single LLM call, confidence capped 0.8 -------
+# Word: prose -> tokens via single LLM call, confidence capped 0.8-
 def parse_word(path, config):
     from docx import Document  # lazy
     text = "\n".join(p.text for p in Document(path).paragraphs if p.text.strip())
@@ -135,13 +144,17 @@ def parse_word(path, config):
 
 
 def _prose_to_tokens(text, config):
+    """
+        
+    """
     groups = _empty_groups()
     if not llm.available():
         log.warning("Word/prose path needs GOOGLE_API_KEY — no tokens extracted")
         return groups
     prompt = (
         "Extract design tokens from this spec. Return JSON: "
-        '{"colors":{name:hex},"spacing":{name:value},"fontSizes":{name:value}}. '
+        '{"colors":{name:hex},"spacing":{name:value},"fontSizes":{name:value},'
+        '"brand_voice":[statement,...],"imagery_guidelines":[statement,...],"principles":[statement,...]}. '
         "Only include values explicitly stated.\n\n" + text[:6000])
     try:
         raw = llm.call(prompt, api_key=(config or {}).get("google_key"))
@@ -161,10 +174,28 @@ def _prose_to_tokens(text, config):
         _place(groups, ("typography", "fontSize"), name,
                make_token(str(val), "fontSize", confidence=0.8, threshold=0.75,
                           description="prose-derived", provenance={"source_page": "word-prose"}))
+    for i, statement in enumerate(data.get("brand_voice") or []):
+        _place(groups, ("brand_guide",), f"voice-{i + 1}",
+               make_token(str(statement), "text", confidence=0.8, threshold=0.75,
+                          description="prose-derived", provenance={"source_page": "word-prose"}))
+    for i, statement in enumerate(data.get("imagery_guidelines") or []):
+        _place(groups, ("brand_guide",), f"imagery-{i + 1}",
+               make_token(str(statement), "text", confidence=0.8, threshold=0.75,
+                          description="prose-derived", provenance={"source_page": "word-prose"}))
+    for i, statement in enumerate(data.get("principles") or []):
+        _place(groups, ("principles",), f"principle-{i + 1}",
+               make_token(str(statement), "text", confidence=0.8, threshold=0.75,
+                          description="prose-derived", provenance={"source_page": "word-prose"}))
     return groups
 
 
 def _loads(raw):
+    """
+        Arguments:
+            raw: str, raw LLM output
+        Returns: 
+            dict, parsed JSON or empty dict on failure
+    """
     m = re.search(r"\{.*\}", raw or "", re.S)
     try:
         return json.loads(m.group(0)) if m else {}
@@ -173,6 +204,12 @@ def _loads(raw):
 
 
 def _safe_pdf_text(path):
+    """
+        Arguments:
+            path: str, path to PDF file
+        Returns: 
+            str, extracted text or empty string on failure
+    """
     try:
         return pdf_table_extractor.extract_text(path)
     except Exception:  # noqa: BLE001
@@ -180,9 +217,19 @@ def _safe_pdf_text(path):
 
 
 def run(file_path, config=None):
+    """
+        Arguments: 
+            file_path: str, path to document file
+            config: dict, optional configuration
+        Returns:
+            dict, canonical token groups extracted from the document
+    """
     config = config or {}
     ext = os.path.splitext(file_path)[1].lower()
-    if ext in (".xlsx", ".xls"):
+    if ext in (".xlsx",
+    """
+        
+    """ ".xls"):
         groups = parse_excel(file_path)
     elif ext == ".pdf":
         groups = parse_pdf(file_path, config)

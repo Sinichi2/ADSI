@@ -41,6 +41,10 @@
     "spacing": { "$ref": "#/definitions/tokenGroup" },
     "radius": { "$ref": "#/definitions/tokenGroup" },
     "shadow": { "$ref": "#/definitions/tokenGroup" },
+    "logo": { "$ref": "#/definitions/tokenGroup" },
+    "icon": { "$ref": "#/definitions/tokenGroup" },
+    "brand_guide": { "$ref": "#/definitions/tokenGroup" },
+    "principles": { "$ref": "#/definitions/tokenGroup" },
     "component": {
       "type": "object",
       "description": "Optional: variant + state mappings if component-level extraction is in scope",
@@ -68,7 +72,7 @@
       "description": "A single design token",
       "properties": {
         "value": { "description": "The resolved value, e.g. #1A2B4C, 16px, 1.5rem" },
-        "type": { "type": "string", "enum": ["color", "fontFamily", "fontSize", "fontWeight", "lineHeight", "letterSpacing", "dimension", "shadow", "duration", "number"] },
+        "type": { "type": "string", "enum": ["color", "fontFamily", "fontSize", "fontWeight", "lineHeight", "letterSpacing", "dimension", "shadow", "duration", "number", "image", "text"] },
         "description": { "type": "string" },
         "provenance": {
           "type": "object",

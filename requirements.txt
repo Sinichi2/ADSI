@@ -17,3 +17,6 @@ firecrawl-py
 # LLM (prose interpretation, website naming, swatch naming, scale suggestion)
 langchain
 langchain-google-genai
+
+# Orchestration (router graph over the four ingestion paths)
+langgraph

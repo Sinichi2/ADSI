@@ -7,7 +7,7 @@ import json
 import logging
 import os
 
-from ingestion import llm
+from ingestion.agent import llm
 from ingestion.schema_assembler import assemble, make_token
 
 log = logging.getLogger(__name__)
@@ -20,6 +20,10 @@ _SECTIONS = {
     "spacing": (("spacing",), "dimension"),
     "radius": (("radius",), "dimension"),
     "shadow": (("shadow",), "shadow"),
+    "logo": (("logo",), "image"),
+    "icon": (("icon",), "image"),
+    "brand_guide": (("brand_guide",), "text"),
+    "design_principles": (("principles",), "text"),
 }
 
 

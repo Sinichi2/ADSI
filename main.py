@@ -1,18 +1,6 @@
-"""CLI entry point. Subcommands: document | figma | website | manual.
-
-  python main.py document --file ./spec.pdf --output ./output/tokens.json
-  python main.py figma    --file-key <key>  --output ./output/tokens.json
-  python main.py website  --url https://example.com --output ./output/tokens.json --confidence-threshold 0.75
-  python main.py manual   --output ./output/tokens.json
-"""
-import argparse
-import json
-import logging
-import os
+import argparse, json, logging, os
 from datetime import datetime, timezone
-
 from dotenv import load_dotenv
-
 from ingestion import hitl_export, router
 from ingestion.schema_assembler import iter_tokens
 
@@ -29,17 +17,18 @@ def _config(args):
 
 
 def _log_run(path, doc):
+    """
+        
+    """
     ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     d = os.path.join("runs", ts, path)
     os.makedirs(d, exist_ok=True)
     _write(os.path.join(d, "tokens.json"), doc)
 
-
 def _write(path, obj):
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(obj, f, indent=2)
-
 
 def _run(path, inp, args):
     doc = router.dispatch(path, inp, _config(args))
@@ -53,10 +42,8 @@ def _run(path, inp, args):
         msg += f" {len(hitl['review_items'])} tokens need review -> {hpath}"
     print(msg)
 
-
 def _out(parser, default=None):
     parser.add_argument("--output", default=default, required=default is None)
-
 
 def main(argv=None):
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -65,7 +52,7 @@ def main(argv=None):
     sub = p.add_subparsers(dest="cmd", required=True)
 
     d = sub.add_parser("document"); d.add_argument("--file", required=True, dest="inp"); _out(d)
-    f = sub.add_parser("figma"); f.add_argument("--file-key", required=True, dest="inp"); _out(f)
+    # f = sub.add_parser("figma"); f.add_argument("--file-key", required=True, dest="inp"); _out(f)
     w = sub.add_parser("website"); w.add_argument("--url", required=True, dest="inp")
     w.add_argument("--confidence-threshold", type=float, default=0.75); _out(w)
     m = sub.add_parser("manual"); _out(m, default="./output/tokens.json")
