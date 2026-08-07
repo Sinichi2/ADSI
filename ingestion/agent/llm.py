@@ -21,7 +21,6 @@ def _client(model, api_key):
     key = api_key or os.getenv("GOOGLE_API_KEY")
     if not key:
         raise LLMUnavailable("GOOGLE_API_KEY not set — LLM steps skipped.")
-    # ponytail: verify the real model string in Google AI Studio; default is a placeholder.
     model = model or os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
     try:
         from langchain_google_genai import ChatGoogleGenerativeAI

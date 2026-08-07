@@ -50,7 +50,7 @@ def _name_semantics(groups, api_key=None):
         prompt = ("Given these web color token keys, suggest a semantic role "
                   "(background/text/action/border) for each, one per line as key=role:\n"
                   + "\n".join(colors))
-        # ponytail: parsed into descriptions only; keeps naming advisory, never auto-renames.
+        # parsed into descriptions only; keeps naming advisory, never auto-renames.
         for line in llm.call(prompt, api_key=api_key).splitlines():
             if "=" in line:
                 k, role = line.split("=", 1)

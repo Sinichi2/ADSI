@@ -5,7 +5,7 @@ def dominant_colors(image_path, max_colors=8):
     """Return list of hex colors, most frequent first, from a swatch image/crop."""
     from PIL import Image  # pillow is a base dep
     img = Image.open(image_path).convert("RGB")
-    # ponytail: quantize is a cheap dominant-color proxy; swap for k-means if palettes get noisy.
+    # quantize is a cheap dominant-color proxy; swap for k-means if palettes get noisy.
     quant = img.quantize(colors=max_colors)
     palette = quant.getpalette()
     counts = sorted(quant.getcolors(), reverse=True)  # [(count, index), ...]
